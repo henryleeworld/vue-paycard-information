@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <meta property="og:title" content="信用卡資訊" />
+        <meta property="og:description" content="信用卡付款，等同現金付款，是臺灣消費者日常購買的主要支付方式之一。請確認你的購買資訊，正確填寫卡號資料。" />
+        <meta property="og:locale" content="zh_TW" />
+        <meta property="og:type" content="website" />
+        <link rel="stylesheet" href="css/paycard-information.css" />
+        <title>信用卡資訊</title>
+    </head>
+    <body>
+        <div class="wrapper" id="app">
+            <div class="card-form">
+                <div class="card-list">
+                    <div class="item" v-bind:class="{ 'active' : isCardFlipped }">
+                        <div class="item-side front">
+                            <div class="item-focus" v-bind:class="{'active' : focusElementStyle }" v-bind:style="focusElementStyle" ref="focusElement"></div>
+                            <div class="item-cover">
+                                <img v-bind:src="'images/background/' + currentCardBackground + '.jpeg'" class="item-bg" />
+                            </div>
+                            <div class="item-wrapper">
+                                <div class="item-top">
+                                    <img src="images/chip.png" class="item-chip" />
+                                    <div class="item-type">
+                                        <transition name="slide-fade-up">
+                                            <img v-bind:src="'images/' + getCardType + '.png'" v-if="getCardType" v-bind:key="getCardType" alt="" class="item-typeImg" />
+                                        </transition>
+                                    </div>
+                                </div>
+                                <label for="cardNumber" class="item-number" ref="cardNumber">
+                                    <template v-if="getCardType === 'amex'">
+                                        <span v-for="(n, $index) in amexCardMask" :key="$index">
+                                            <transition name="slide-fade-up">
+                                                <div class="item-numberItem" v-if="$index > 4 && $index < 14 && cardNumber.length > $index && n.trim() !== ''">*</div>
+                                                <div class="item-numberItem" :class="{ 'active' : n.trim() === '' }" :key="$index" v-else-if="cardNumber.length > $index">
+                                                    {{cardNumber[$index]}}
+                                                </div>
+                                                <div class="item-numberItem" :class="{ 'active' : n.trim() === '' }" v-else :key="$index + 1">{{n}}</div>
+                                            </transition>
+                                        </span>
+                                    </template>
+                                    <template v-else>
+                                        <span v-for="(n, $index) in otherCardMask" :key="$index">
+                                            <transition name="slide-fade-up">
+                                                <div class="item-numberItem" v-if="$index > 4 && $index < 15 && cardNumber.length > $index && n.trim() !== ''">*</div>
+                                                <div class="item-numberItem" :class="{ 'active' : n.trim() === '' }" :key="$index" v-else-if="cardNumber.length > $index">
+                                                    {{cardNumber[$index]}}
+                                                </div>
+                                                <div class="item-numberItem" :class="{ 'active' : n.trim() === '' }" v-else :key="$index + 1">{{n}}</div>
+                                            </transition>
+                                        </span>
+                                    </template>
+                                </label>
+                                <div class="item-content">
+                                    <label for="cardName" class="item-info" ref="cardName">
+                                        <div class="item-holder">持卡者</div>
+                                        <transition name="slide-fade-up">
+                                            <div class="item-name" v-if="cardName.length" key="1">
+                                                <transition-group name="slide-fade-right">
+                                                    <span class="item-nameItem" v-for="(n, $index) in cardName.replace(/\s\s+/g, ' ')" v-if="$index === $index" v-bind:key="$index + 1">{{n}}</span>
+                                                </transition-group>
+                                            </div>
+                                            <div class="item-name" v-else key="2">全名</div>
+                                        </transition>
+                                    </label>
+                                    <div class="item-date" ref="cardDate">
+                                        <label for="cardMonth" class="item-dateTitle">到期日</label>
+                                        <label for="cardMonth" class="item-dateItem">
+                                            <transition name="slide-fade-up">
+                                                <span v-if="cardMonth" v-bind:key="cardMonth">{{cardMonth}}</span>
+                                                <span v-else key="2">MM</span>
+                                            </transition>
+                                        </label>
+                                        /
+                                        <label for="cardYear" class="item-dateItem">
+                                            <transition name="slide-fade-up">
+                                                <span v-if="cardYear" v-bind:key="cardYear">{{String(cardYear).slice(2,4)}}</span>
+                                                <span v-else key="2">YY</span>
+                                            </transition>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="item-side back">
+                            <div class="item-cover">
+                                <img v-bind:src="'images/background/' + currentCardBackground + '.jpeg'" class="item-bg" />
+                            </div>
+                            <div class="item-band"></div>
+                            <div class="itemcvv">
+                                <div class="itemcvvTitle">安全碼</div>
+                                <div class="itemcvvBand">
+                                    <span v-for="(n, $index) in cardCvv" :key="$index">
+                                        *
+                                    </span>
+                                </div>
+                                <div class="item-type">
+                                    <img v-bind:src="'images/' + getCardType + '.png'" v-if="getCardType" class="item-typeImg" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="inner">
+                    <div class="card-input">
+                        <label for="cardNumber" class="label">卡號碼</label>
+                        <input type="text" id="cardNumber" class="input" v-mask="generateCardNumberMask" v-model="cardNumber" v-on:focus="focusInput" v-on:blur="blurInput" data-ref="cardNumber" autocomplete="off" />
+                    </div>
+                    <div class="card-input">
+                        <label for="cardName" class="label">持卡者</label>
+                        <input type="text" id="cardName" class="input" v-model="cardName" v-on:focus="focusInput" v-on:blur="blurInput" data-ref="cardName" autocomplete="off" />
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="group">
+                                <label for="cardMonth" class="label">到期日</label>
+                                <select class="input select" id="cardMonth" v-model="cardMonth" v-on:focus="focusInput" v-on:blur="blurInput" data-ref="cardDate">
+                                    <option value="" disabled selected>月</option>
+                                    <option v-bind:value="n < 10 ? '0' + n : n" v-for="n in 12" v-bind:disabled="n < minCardMonth" v-bind:key="n">
+                                        {{n < 10 ? '0' + n : n}}
+                                    </option>
+                                </select>
+                                <select class="input select" id="cardYear" v-model="cardYear" v-on:focus="focusInput" v-on:blur="blurInput" data-ref="cardDate">
+                                    <option value="" disabled selected>年</option>
+                                    <option v-bind:value="$index + minCardYear" v-for="(n, $index) in 12" v-bind:key="n">
+                                        {{$index + minCardYear}}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col cvv">
+                            <div class="card-input">
+                                <label for="cardCvv" class="label">安全碼</label>
+                                <input type="text" class="input" id="cardCvv" v-mask="'####'" maxlength="4" v-model="cardCvv" v-on:focus="flipCard(true)" v-on:blur="flipCard(false)" autocomplete="off" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" defer></script>
+        <script src="https://unpkg.com/vue-the-mask@0.11.1/dist/vue-the-mask.js" defer></script>
+        <script src="js/paycard-information.js" defer></script>
+    </body>
+</html>
